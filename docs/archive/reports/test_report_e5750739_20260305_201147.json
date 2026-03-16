@@ -1,0 +1,28 @@
+{
+  "suite_id": "e5750739",
+  "version": "0.1.0",
+  "start_time": "2026-03-05T20:11:47.357253",
+  "end_time": "2026-03-05T20:11:47.501855",
+  "total_duration_ms": 144,
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "environment": {
+    "python_version": "3.12",
+    "os": "Linux",
+    "dependencies": {
+      "requests": ">=2.28.0",
+      "boto3": ">=1.26.0",
+      "opencv-python": ">=4.7.0",
+      "numpy": ">=1.24.0"
+    }
+  },
+  "api_config": {
+    "base_url": "https://dev.vivago.ai/api/gw",
+    "timeout": 120
+  },
+  "results": []
+}

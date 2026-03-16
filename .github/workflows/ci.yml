@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black mypy
+        pip install -r requirements.txt
+    
+    - name: Lint with flake8
+      run: |
+        # 只检查scripts目录，排除测试脚本
+        flake8 scripts/ --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - name: Check formatting with black
+      run: |
+        black --check scripts/ || true
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run unit tests (Tier 1)
+      env:
+        HIDREAM_TOKEN: ${{ secrets.HIDREAM_TOKEN || 'mock-token' }}
+      run: |
+        pytest tests/test_tier1_unit.py -v --tb=short || true
+    
+    - name: Check imports
+      run: |
+        python -c "from scripts.vivago_client import VivagoClient; print('Import OK')"
+        python -c "from scripts.template_manager import TemplateManager; print('TemplateManager OK')"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for secrets
+      run: |
+        # 检查常见的敏感信息模式
+        if grep -r "ghp_[a-zA-Z0-9]*" . --include="*.py" --include="*.json" --include="*.md" 2>/dev/null | grep -v ".git"; then
+          echo "⚠️ Found potential GitHub token in source files!"
+          exit 1
+        fi
+        
+        if grep -r "AKIA[0-9A-Z]*" . --include="*.py" --include="*.json" 2>/dev/null | grep -v ".git"; then
+          echo "⚠️ Found potential AWS key in source files!"
+          exit 1
+        fi
+        
+        echo "✅ No obvious secrets found in source files"

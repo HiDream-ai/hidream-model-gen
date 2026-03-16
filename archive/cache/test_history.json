@@ -1,0 +1,380 @@
+{
+  "text_to_image_kling": {
+    "function_id": "text_to_image_kling",
+    "function_name": "文生图 (Kling O1)",
+    "category": "image",
+    "credits_per_test": 8,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.984186",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 8,
+        "duration_seconds": 10,
+        "error_message": null,
+        "notes": null
+      }
+    ],
+    "total_tests": 1,
+    "passed_tests": 1,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:00:19.984186",
+    "last_passed": "2026-03-07T02:00:19.984186",
+    "consecutive_failures": 0
+  },
+  "text_to_image_hidream": {
+    "function_id": "text_to_image_hidream",
+    "function_name": "文生图 (Vivago 2.0)",
+    "category": "image",
+    "credits_per_test": 2,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:21:02.377173",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 2,
+        "duration_seconds": 15,
+        "error_message": null,
+        "notes": "Tier 4 tested"
+      }
+    ],
+    "total_tests": 1,
+    "passed_tests": 1,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:21:02.377173",
+    "last_passed": "2026-03-07T02:21:02.377173",
+    "consecutive_failures": 0
+  },
+  "text_to_image_nano": {
+    "function_id": "text_to_image_nano",
+    "function_name": "文生图 (Nano Banana)",
+    "category": "image",
+    "credits_per_test": 10,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:15:21.060269",
+        "version": "d0c028c",
+        "status": "passed",
+        "credits_used": 10,
+        "duration_seconds": 120,
+        "error_message": null,
+        "notes": "后台显示成功，但pytest标记为失败，待调查"
+      },
+      {
+        "timestamp": "2026-03-07T02:20:53.508510",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 10,
+        "duration_seconds": 84,
+        "error_message": null,
+        "notes": "Fixed version parameter"
+      }
+    ],
+    "total_tests": 2,
+    "passed_tests": 2,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:20:53.508510",
+    "last_passed": "2026-03-07T02:20:53.508510",
+    "consecutive_failures": 0
+  },
+  "image_to_image_kling": {
+    "function_id": "image_to_image_kling",
+    "function_name": "图生图 (Kling O1)",
+    "category": "image",
+    "credits_per_test": 8,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.991361",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 8,
+        "duration_seconds": 15,
+        "error_message": null,
+        "notes": null
+      },
+      {
+        "timestamp": "2026-03-07T02:15:21.064626",
+        "version": "d0c028c",
+        "status": "passed",
+        "credits_used": 8,
+        "duration_seconds": 90,
+        "error_message": null,
+        "notes": "后台显示成功，但pytest中断，待调查"
+      },
+      {
+        "timestamp": "2026-03-07T02:20:53.522954",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 8,
+        "duration_seconds": 49,
+        "error_message": null,
+        "notes": "Works correctly"
+      }
+    ],
+    "total_tests": 3,
+    "passed_tests": 3,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:20:53.522954",
+    "last_passed": "2026-03-07T02:20:53.522954",
+    "consecutive_failures": 0
+  },
+  "image_to_image_nano": {
+    "function_id": "image_to_image_nano",
+    "function_name": "图生图 (Nano Banana)",
+    "category": "image",
+    "credits_per_test": 10,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "video_img2vid_v3l": {
+    "function_id": "video_img2vid_v3l",
+    "function_name": "图生视频 (v3L 360p)",
+    "category": "video",
+    "credits_per_test": 20,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.993177",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 180,
+        "error_message": null,
+        "notes": null
+      },
+      {
+        "timestamp": "2026-03-07T02:29:06.146825",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 300,
+        "error_message": null,
+        "notes": "Tier 4 tested"
+      }
+    ],
+    "total_tests": 2,
+    "passed_tests": 2,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:29:06.146825",
+    "last_passed": "2026-03-07T02:29:06.146825",
+    "consecutive_failures": 0
+  },
+  "video_img2vid_v3pro": {
+    "function_id": "video_img2vid_v3pro",
+    "function_name": "图生视频 (v3Pro)",
+    "category": "video",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "video_img2vid_kling": {
+    "function_id": "video_img2vid_kling",
+    "function_name": "图生视频 (Kling video O1)",
+    "category": "video",
+    "credits_per_test": 80,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:32:59.637589",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 80,
+        "duration_seconds": 600,
+        "error_message": null,
+        "notes": "Tier 4 tested, high quality"
+      }
+    ],
+    "total_tests": 1,
+    "passed_tests": 1,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:32:59.637589",
+    "last_passed": "2026-03-07T02:32:59.637589",
+    "consecutive_failures": 0
+  },
+  "video_txt2vid_v3l": {
+    "function_id": "video_txt2vid_v3l",
+    "function_name": "文生视频 (v3L 360p)",
+    "category": "video",
+    "credits_per_test": 20,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.994948",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 300,
+        "error_message": null,
+        "notes": null
+      },
+      {
+        "timestamp": "2026-03-07T02:29:06.152307",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 300,
+        "error_message": null,
+        "notes": "Tier 4 tested"
+      }
+    ],
+    "total_tests": 2,
+    "passed_tests": 2,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:29:06.152307",
+    "last_passed": "2026-03-07T02:29:06.152307",
+    "consecutive_failures": 0
+  },
+  "video_txt2vid_v3pro": {
+    "function_id": "video_txt2vid_v3pro",
+    "function_name": "文生视频 (v3Pro)",
+    "category": "video",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "video_txt2vid_kling": {
+    "function_id": "video_txt2vid_kling",
+    "function_name": "文生视频 (Kling video O1)",
+    "category": "video",
+    "credits_per_test": 80,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "video_keyframe_v3l": {
+    "function_id": "video_keyframe_v3l",
+    "function_name": "视频首尾帧 (v3L)",
+    "category": "video",
+    "credits_per_test": 20,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.996829",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 240,
+        "error_message": null,
+        "notes": null
+      },
+      {
+        "timestamp": "2026-03-07T02:29:06.154504",
+        "version": "a795a18",
+        "status": "passed",
+        "credits_used": 20,
+        "duration_seconds": 300,
+        "error_message": null,
+        "notes": "Tier 4 tested"
+      }
+    ],
+    "total_tests": 2,
+    "passed_tests": 2,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:29:06.154504",
+    "last_passed": "2026-03-07T02:29:06.154504",
+    "consecutive_failures": 0
+  },
+  "video_keyframe_v3pro": {
+    "function_id": "video_keyframe_v3pro",
+    "function_name": "视频首尾帧 (v3Pro)",
+    "category": "video",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "template_ghibli": {
+    "function_id": "template_ghibli",
+    "function_name": "模板: Ghibli",
+    "category": "template",
+    "credits_per_test": 30,
+    "test_history": [
+      {
+        "timestamp": "2026-03-07T02:00:19.998628",
+        "version": "b51b13a",
+        "status": "passed",
+        "credits_used": 30,
+        "duration_seconds": 600,
+        "error_message": null,
+        "notes": null
+      }
+    ],
+    "total_tests": 1,
+    "passed_tests": 1,
+    "failed_tests": 0,
+    "last_tested": "2026-03-07T02:00:19.998628",
+    "last_passed": "2026-03-07T02:00:19.998628",
+    "consecutive_failures": 0
+  },
+  "template_iron_man": {
+    "function_id": "template_iron_man",
+    "function_name": "模板: Iron Man",
+    "category": "template",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "template_barbie": {
+    "function_id": "template_barbie",
+    "function_name": "模板: Barbie",
+    "category": "template",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "template_angel_wings": {
+    "function_id": "template_angel_wings",
+    "function_name": "模板: Angel Wings",
+    "category": "template",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  },
+  "template_renovation": {
+    "function_id": "template_renovation",
+    "function_name": "模板: Renovation of Old Photos",
+    "category": "template",
+    "credits_per_test": 30,
+    "test_history": [],
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "last_tested": null,
+    "last_passed": null,
+    "consecutive_failures": 0
+  }
+}

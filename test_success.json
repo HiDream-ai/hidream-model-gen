@@ -1,0 +1,22 @@
+{
+  "prompt": "\u4e00\u53ea\u53ef\u7231\u7684\u5c0f\u718a\u732b",
+  "parameters": {
+    "wh_ratio": "1:1",
+    "batch_size": 1,
+    "version": "kling-image-o1",
+    "guidance_scale": 7.5,
+    "sample_steps": 40,
+    "seed": -1,
+    "enhance": "1k"
+  },
+  "results": [
+    {
+      "algo_version": "kling-image-o1",
+      "description": "",
+      "image": "p_70ce7db9-4aec-4ffe-8a49-dfd83e0cf395",
+      "sub_task_id": "180dc83b-666a-48ba-8310-b4e863863dd0",
+      "task_completion": 1,
+      "task_status": 1
+    }
+  ]
+}

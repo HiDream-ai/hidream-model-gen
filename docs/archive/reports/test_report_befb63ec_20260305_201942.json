@@ -1,0 +1,39 @@
+{
+  "suite_id": "befb63ec",
+  "version": "0.1.0",
+  "start_time": "2026-03-05T20:19:42.581717",
+  "end_time": "2026-03-05T20:19:44.597481",
+  "total_duration_ms": 2015,
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0
+  },
+  "environment": {
+    "python_version": "3.12",
+    "os": "Linux",
+    "dependencies": {
+      "requests": ">=2.28.0",
+      "boto3": ">=1.26.0",
+      "opencv-python": ">=4.7.0",
+      "numpy": ">=1.24.0"
+    }
+  },
+  "api_config": {
+    "base_url": "https://vivago.ai/api/gw",
+    "timeout": 120
+  },
+  "results": [
+    {
+      "test_name": "txt2img_basic",
+      "test_id": "befb63ec_txt2img_basic_1772713182",
+      "status": "FAILED",
+      "start_time": "2026-03-05T20:19:42.682418",
+      "end_time": "2026-03-05T20:19:44.596664",
+      "duration_ms": 1914,
+      "error_message": "API returned None",
+      "response_data": null
+    }
+  ]
+}
