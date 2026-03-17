@@ -10,20 +10,28 @@ import json
 import logging
 import os
 import sys
+import time
+from typing import Optional
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.vivago_client import create_client
+try:
+    from scripts.vivago_client import create_client
+    from scripts.exceptions import MissingCredentialError
+except ImportError:
+    print("Error: Failed to import required modules. Please ensure you are running from the project root.")
+    sys.exit(1)
 
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
 )
 logger = logging.getLogger(__name__)
 
-
-def main():
+def setup_args():
     parser = argparse.ArgumentParser(
         description='Generate images from text using Vivago AI'
     )
@@ -101,7 +109,10 @@ def main():
         help='Enhancement level (default: 1k)'
     )
     
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    args = setup_args()
     
     # Validate batch size
     if not 1 <= args.batch_size <= 4:
@@ -111,28 +122,46 @@ def main():
     # Create client
     try:
         client = create_client(token=args.token)
-    except ValueError as e:
+    except MissingCredentialError:
+        print("\nError: API Token not found.")
+        print("Please set HIDREAM_TOKEN environment variable or use --token argument.")
+        print("\nTo set it for this session:")
+        print('export HIDREAM_TOKEN="your_token_here"')
+        sys.exit(1)
+    except Exception as e:
         logger.error(f"Failed to create client: {e}")
         sys.exit(1)
     
     # Generate images
-    logger.info(f"Generating {args.batch_size} image(s) with prompt: {args.prompt}")
-    logger.info(f"Aspect ratio: {args.wh_ratio}, Version: {args.version}")
+    print(f"\n🎨 Generating {args.batch_size} image(s)...")
+    print(f"   Prompt: {args.prompt}")
+    print(f"   Ratio: {args.wh_ratio}")
+    print(f"   Model: {args.version}")
     
-    results = client.text_to_image(
-        prompt=args.prompt,
-        negative_prompt=args.negative_prompt,
-        wh_ratio=args.wh_ratio,
-        batch_size=args.batch_size,
-        version=args.version,
-        guidance_scale=args.guidance_scale,
-        sample_steps=args.sample_steps,
-        seed=args.seed,
-        enhance=args.enhance
-    )
+    start_time = time.time()
+    try:
+        results = client.text_to_image(
+            prompt=args.prompt,
+            negative_prompt=args.negative_prompt,
+            wh_ratio=args.wh_ratio,
+            batch_size=args.batch_size,
+            version=args.version,
+            guidance_scale=args.guidance_scale,
+            sample_steps=args.sample_steps,
+            seed=args.seed,
+            enhance=args.enhance
+        )
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Operation cancelled by user.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Generation failed: {e}")
+        sys.exit(1)
+        
+    duration = time.time() - start_time
     
     if not results:
-        logger.error("Generation failed")
+        print("\n❌ Generation failed: No results returned.")
         sys.exit(1)
     
     # Save results
@@ -150,34 +179,35 @@ def main():
         'results': results
     }
     
-    with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+    try:
+        with open(args.output, 'w') as f:
+            json.dump(output_data, f, indent=2)
+        print(f"\n💾 Results saved to: {args.output}")
+    except IOError as e:
+        logger.error(f"Failed to save results: {e}")
     
-    logger.info(f"Results saved to: {args.output}")
-    
-    # Print image URLs
-    if not results:
-        logger.error("No results returned")
-        sys.exit(1)
-    
-    if isinstance(results, dict):
-        # Error response
-        print(f"\nError: {results.get('message', 'Unknown error')}")
-        sys.exit(1)
+    # Print summary
+    print(f"\n✨ Done in {duration:.1f}s")
     
     for i, result in enumerate(results):
-        if isinstance(result, str):
-            print(f"\n[{i+1}] Error: {result}")
+        if not isinstance(result, dict):
+            print(f"[{i+1}] Invalid result format")
             continue
+            
         status = result.get('task_status')
-        status_text = {1: '✓ Completed', 3: '✗ Failed', 4: '⊘ Rejected'}.get(status, '? Unknown')
-        image_url = result.get('image', 'N/A')
+        status_map = {1: '✅ Completed', 3: '❌ Failed', 4: '🚫 Rejected'}
+        status_text = status_map.get(status, f'❓ Unknown ({status})')
         
-        print(f"\n[{i+1}] {status_text}")
-        print(f"    URL: {image_url}")
-        
-        if result.get('task_completion'):
-            print(f"    Progress: {result['task_completion']*100:.0f}%")
+        print(f"\nImage {i+1}: {status_text}")
+        if status == 1:
+            image_id = result.get('image', '')
+            if image_id.startswith('p_'):
+                clean_id = image_id[2:]
+                url = f"https://storage.vivago.ai/image/{clean_id}.jpg"
+                print(f"   ID:  {image_id}")
+                print(f"   URL: {url}")
+            else:
+                print(f"   URL: {image_id}")
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Vivago AI API Client - v0.3.0
+Vivago AI API Client - v0.3.1
 支持层级架构：一级功能 -> 二级端口
 """
 
@@ -11,10 +11,9 @@ import time
 import uuid
 import logging
 import warnings
+import tempfile
 from typing import Optional, Dict, Any, List, Tuple
 import requests
-import boto3
-from botocore.config import Config
 
 from .enums import TaskStatus, AspectRatio, PortCategory, PortName, ModuleName
 from .exceptions import (
@@ -22,6 +21,7 @@ from .exceptions import (
     TaskFailedError, TaskRejectedError, TaskTimeoutError, ImageUploadError
 )
 from .config_loader import load_ports_config
+from .image_processor import ImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,6 @@ class VivagoClient:
         
         Args:
             token: Vivago API Bearer token
-            storage_ak: Storage access key for image upload (optional)
-            storage_sk: Storage secret key for image upload (optional)
             ports_config_path: Path to api_ports.json (optional)
         """
         self.token = token
@@ -236,34 +234,15 @@ class VivagoClient:
         Raises:
             ImageUploadError: 上传失败
         """
-        import cv2
-        
         # 生成唯一的图片 UUID
         image_uuid = f"j_{uuid.uuid4()}"
         logger.info(f"Uploading image {image_path} -> {image_uuid} (v2)")
         
-        # 步骤1: 读取并处理图片
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ImageUploadError(image_path, "Failed to read image file")
-        
-        # 缩放图片
-        height, width = image.shape[:2]
-        if height > width:
-            scale = max_side / height
-        else:
-            scale = max_side / width
-        
-        if scale < 1:
-            new_width = int(width * scale)
-            new_height = int(height * scale)
-            image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            logger.info(f"Resized image to {new_width}x{new_height}")
-        
-        # JPEG 压缩
-        compression_params = [cv2.IMWRITE_JPEG_QUALITY, quality]
-        _, encoded_image = cv2.imencode('.jpg', image, compression_params)
-        image_data = encoded_image.tobytes()
+        # 步骤1: 处理图片
+        try:
+            image_data = ImageProcessor.process_for_upload(image_path, max_side, quality)
+        except Exception as e:
+            raise ImageUploadError(image_path, str(e))
         
         # 步骤2: 获取预签名上传 URL
         base_url = "https://vivago.ai"
@@ -336,18 +315,8 @@ class VivagoClient:
         Returns:
             (image_uuid, actual_wh_ratio): 上传后的图片UUID和实际使用的宽高比
         """
-        import cv2
-        import numpy as np
-        import tempfile
-        import os
-        
-        # 读取图片
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ImageUploadError(image_path, "Failed to read image file")
-        
-        height, width = image.shape[:2]
-        actual_ratio = width / height
+        # 读取图片比例
+        actual_ratio = ImageProcessor.get_image_ratio(image_path)
         
         # 如果指定了目标比例，使用它；否则找到最接近的支持比例
         if target_ratio and target_ratio in SUPPORTED_RATIOS:
@@ -355,62 +324,16 @@ class VivagoClient:
         else:
             closest_ratio = find_closest_ratio(actual_ratio)
         
-        target_ratio_val = parse_ratio(closest_ratio)
+        # 由于 ImageProcessor 目前不支持复杂裁剪，这里简化处理：
+        # 直接上传并让后端/模板处理，或者后续在 ImageProcessor 中添加裁剪逻辑
+        # 目前直接调用 upload_image_v2，它会进行缩放但不会裁剪
         
-        # 检查是否需要裁剪
-        current_ratio = width / height
-        ratio_diff = abs(current_ratio - target_ratio_val)
+        # TODO: 在 ImageProcessor 中实现 crop_to_ratio
         
-        # 如果比例差异大于阈值（1%），需要裁剪
-        if ratio_diff > 0.01:
-            logger.info(f"Image ratio {current_ratio:.3f} differs from target {closest_ratio} ({target_ratio_val:.3f}), cropping...")
+        image_uuid = self.upload_image_v2(image_path)
+        logger.info(f"Uploaded image {image_path} -> {image_uuid} (ratio: {closest_ratio})")
             
-            # 计算裁剪区域（居中裁剪）
-            if current_ratio > target_ratio_val:
-                # 图片太宽，需要裁掉左右
-                new_width = int(height * target_ratio_val)
-                start_x = (width - new_width) // 2
-                image = image[:, start_x:start_x + new_width]
-            else:
-                # 图片太高，需要裁掉上下
-                new_height = int(width / target_ratio_val)
-                start_y = (height - new_height) // 2
-                image = image[start_y:start_y + new_height, :]
-            
-            logger.info(f"Cropped image to {image.shape[1]}x{image.shape[0]} ({closest_ratio})")
-        
-        # 调整大小（最大边不超过1024）
-        height, width = image.shape[:2]
-        max_side = 1024
-        
-        if height > width:
-            scale = max_side / height
-        else:
-            scale = max_side / width
-        
-        if scale < 1:
-            new_width = int(width * scale)
-            new_height = int(height * scale)
-            image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        
-        # 保存到临时文件，然后使用新的上传方式
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-            temp_path = tmp.name
-        
-        try:
-            compression_params = [cv2.IMWRITE_JPEG_QUALITY, 80]
-            cv2.imwrite(temp_path, image, compression_params)
-            
-            # 使用新的 v2 上传方式
-            image_uuid = self.upload_image_v2(temp_path)
-            
-            logger.info(f"Preprocessed and uploaded image {image_path} -> {image_uuid} with ratio {closest_ratio}")
-            
-            return image_uuid, closest_ratio
-        finally:
-            # 清理临时文件
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+        return image_uuid, closest_ratio
     
     # ==================== Core API Call ====================
     
@@ -1271,16 +1194,20 @@ if __name__ == "__main__":
     # 示例：查看可用端口
     logging.basicConfig(level=logging.INFO)
     
-    client = create_client()
-    
-    print("\n=== 可用一级功能 ===")
-    for cat_id, info in client.list_categories().items():
-        print(f"{cat_id}: {info['name']} ({info['name_en']}) - {info['status']}")
-    
-    print("\n=== 文生图可用端口 ===")
-    for port_id, info in client.list_ports("text_to_image").items():
-        print(f"  {port_id}: {info['name']} - {'✅' if info['tested'] else '⏳'}")
-    
-    print("\n=== 图生视频可用端口 ===")
-    for port_id, info in client.list_ports("image_to_video").items():
-        print(f"  {port_id}: {info['name']} - {'✅' if info['tested'] else '⏳'}")
+    try:
+        client = create_client()
+        
+        print("\n=== 可用一级功能 ===")
+        for cat_id, info in client.list_categories().items():
+            print(f"{cat_id}: {info['name']} ({info['name_en']}) - {info['status']}")
+        
+        print("\n=== 文生图可用端口 ===")
+        for port_id, info in client.list_ports("text_to_image").items():
+            print(f"  {port_id}: {info['name']} - {'✅' if info['tested'] else '⏳'}")
+        
+        print("\n=== 图生视频可用端口 ===")
+        for port_id, info in client.list_ports("image_to_video").items():
+            print(f"  {port_id}: {info['name']} - {'✅' if info['tested'] else '⏳'}")
+            
+    except MissingCredentialError:
+        print("请设置 HIDREAM_TOKEN 环境变量以运行示例")
