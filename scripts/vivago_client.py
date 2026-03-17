@@ -67,8 +67,6 @@ class VivagoClient:
     def __init__(
         self, 
         token: str, 
-        storage_ak: Optional[str] = None, 
-        storage_sk: Optional[str] = None,
         ports_config_path: Optional[str] = None
     ):
         """
@@ -89,17 +87,7 @@ class VivagoClient:
         # Load ports configuration
         self.ports_config = self._load_ports_config(ports_config_path)
         self.base_url = self.ports_config.get("base_url", "https://vivago.ai/api/gw")
-        
-        # Initialize S3 client if credentials provided
-        self.s3_client = None
-        if storage_ak and storage_sk:
-            self.s3_client = boto3.client(
-                's3',
-                endpoint_url=self.STORAGE_ENDPOINT,
-                aws_access_key_id=storage_ak,
-                aws_secret_access_key=storage_sk,
-                config=Config(s3={'addressing_style': 'virtual'})
-            )
+    
     
     def _load_ports_config(self, config_path: Optional[str] = None) -> Dict:
         """Load API ports configuration
@@ -331,60 +319,6 @@ class VivagoClient:
             
         except requests.RequestException as e:
             raise ImageUploadError(image_path, f"Failed to upload image: {e}")
-    
-    def upload_image_legacy(self, image_path: str) -> str:
-        """
-        [已废弃] 上传图片到 Vivago 存储 (旧 S3 方式)
-        
-        警告: 此方法使用旧的 S3 直接上传方式，可能随时失效。
-        请使用 upload_image() 或 upload_image_v2() 方法。
-        
-        Deprecated:
-            将在未来版本中移除。请迁移到 upload_image()。
-        """
-        warnings.warn(
-            "upload_image_legacy() is deprecated and may be removed in a future version. "
-            "Use upload_image() or upload_image_v2() instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        
-        if not self.s3_client:
-            raise MissingCredentialError("Storage credentials not provided. Cannot upload images.")
-        
-        import cv2
-        
-        image_uuid = f"j_{uuid.uuid4()}"
-        logger.info(f"Uploading image {image_path} -> {image_uuid} (legacy S3)")
-        
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ImageUploadError(image_path, "Failed to read image file")
-        
-        height, width = image.shape[:2]
-        max_side = 1024
-        
-        if height > width:
-            scale = max_side / height
-        else:
-            scale = max_side / width
-        
-        if scale < 1:
-            new_width = int(width * scale)
-            new_height = int(height * scale)
-            image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        
-        compression_params = [cv2.IMWRITE_JPEG_QUALITY, 80]
-        _, encoded_image = cv2.imencode('.jpg', image, compression_params)
-        
-        self.s3_client.put_object(
-            Body=encoded_image.tobytes(),
-            Bucket=self.STORAGE_BUCKET,
-            Key=image_uuid,
-            ContentType='image/jpeg'
-        )
-        
-        return image_uuid
     
     def preprocess_image_for_template(self, image_path: str, target_ratio: str = None) -> Tuple[str, str]:
         """
@@ -1324,15 +1258,13 @@ def create_client(
         These parameters will be removed in a future version.
     """
     token = token or os.environ.get("HIDREAM_TOKEN")
-    storage_ak = storage_ak or os.environ.get("STORAGE_AK")
-    storage_sk = storage_sk or os.environ.get("STORAGE_SK")
     
     if not token:
         raise MissingCredentialError(
             "API token required. Set HIDREAM_TOKEN env var or pass token parameter."
         )
     
-    return VivagoClient(token, storage_ak, storage_sk, ports_config_path)
+    return VivagoClient(token, ports_config_path)
 
 
 if __name__ == "__main__":
