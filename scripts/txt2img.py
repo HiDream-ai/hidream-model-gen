@@ -202,8 +202,7 @@ def main():
         if status == 1:
             image_id = result.get('image', '')
             if image_id.startswith('p_'):
-                clean_id = image_id[2:]
-                url = f"https://storage.vivago.ai/image/{clean_id}.jpg"
+                url = f"https://storage.vivago.ai/image/{image_id}.jpg"
                 print(f"   ID:  {image_id}")
                 print(f"   URL: {url}")
             else:

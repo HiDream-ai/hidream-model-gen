@@ -1135,13 +1135,10 @@ class VivagoClient:
         Returns:
             包含图片信息的字典
         """
-        # Remove 'p_' prefix if present for URL
-        clean_id = image_id[2:] if image_id.startswith('p_') else image_id
-        
         return {
             "image_id": image_id,
             "vivago_url": f"https://vivago.ai/history/image",
-            "direct_url": f"https://storage.vivago.ai/image/{clean_id}.jpg",
+            "direct_url": f"https://storage.vivago.ai/image/{image_id}.jpg",
             "note": "图片可直接通过 direct_url 下载"
         }
     
@@ -1152,13 +1149,10 @@ class VivagoClient:
         Returns:
             包含视频信息的字典
         """
-        # Remove 'v_' prefix if present for URL
-        clean_id = video_id[2:] if video_id.startswith('v_') else video_id
-        
         return {
             "video_id": video_id,
             "vivago_url": f"https://vivago.ai/history/video",
-            "direct_url": f"https://media.vivago.ai/{clean_id}.mp4",
+            "direct_url": f"https://media.vivago.ai/{video_id}.mp4",
             "note": "视频可直接通过 direct_url 下载"
         }
 
