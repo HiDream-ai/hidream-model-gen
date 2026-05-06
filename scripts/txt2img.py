@@ -6,12 +6,10 @@ Generate images from text prompts using Vivago AI.
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
 import time
-from typing import Optional
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from scripts.vivago_client import create_client
     from scripts.exceptions import MissingCredentialError
+    from scripts.cli_utils import collect_asset_urls, default_output, image_url, save_json
 except ImportError:
     print("Error: Failed to import required modules. Please ensure you are running from the project root.")
     sys.exit(1)
@@ -76,14 +75,14 @@ def setup_args():
     
     parser.add_argument(
         '--output', '-o',
-        default='results.json',
-        help='Output file for results (default: results.json)'
+        default=default_output('txt2img_results.json'),
+        help='Output JSON file (default: assets/txt2img_results.json)'
     )
     
     parser.add_argument(
         '--token',
         default=os.environ.get('HIDREAM_AUTHORIZATION') or os.environ.get('HIDREAM_TOKEN'),
-        help='API token (or set HIDREAM_AUTHORIZATION env var)'
+        help='API token (or use HIDREAM_AUTHORIZATION/HIDREAM_TOKEN; falls back to bundled Vivago login)'
     )
     
     # Advanced parameters
@@ -130,8 +129,9 @@ def main():
         client = create_client(token=args.token)
     except MissingCredentialError:
         print("\nError: API Token not found.")
-        print("Please set HIDREAM_AUTHORIZATION environment variable or use --token argument.")
-        print("\nTo set it for this session:")
+        print("Set HIDREAM_AUTHORIZATION/HIDREAM_TOKEN, use --token, or run bundled Vivago login:")
+        print("python scripts/vivago_login.py --env overseas-prod login")
+        print("\nManual token example:")
         print('export HIDREAM_AUTHORIZATION="your_token_here"')
         sys.exit(1)
     except Exception as e:
@@ -185,12 +185,12 @@ def main():
             'seed': args.seed,
             'enhance': args.enhance
         },
-        'results': results
+        'results': results,
+        'asset_urls': collect_asset_urls(results)
     }
     
     try:
-        with open(args.output, 'w') as f:
-            json.dump(output_data, f, indent=2)
+        save_json(args.output, output_data)
         print(f"\n💾 Results saved to: {args.output}")
     except IOError as e:
         logger.error(f"Failed to save results: {e}")
@@ -211,11 +211,10 @@ def main():
         if status == 1:
             image_id = result.get('image', '')
             if image_id and image_id.startswith('p_'):
-                url = f"https://storage.vivago.ai/image/{image_id}.jpg"
                 print(f"   ID:  {image_id}")
-                print(f"   URL: {url}")
+                print(f"   URL: {image_url(image_id)}")
             elif image_id:
-                print(f"   URL: {image_id}")
+                print(f"   URL: {image_url(image_id)}")
 
 
 if __name__ == '__main__':

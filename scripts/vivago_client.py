@@ -28,6 +28,37 @@ logger = logging.getLogger(__name__)
 # 视频模板支持的宽高比
 SUPPORTED_RATIOS = ["16:9", "1:1", "9:16", "4:3", "3:4"]
 
+DEFAULT_AUTH_ENV = "overseas-prod"
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    """Read a boolean environment flag."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _resolve_login_token(auth_env: Optional[str], force_login: bool = False) -> str:
+    """Get a Vivago ticket from the bundled login helper."""
+    env = auth_env or os.environ.get("VIVAGO_AUTH_ENV") or DEFAULT_AUTH_ENV
+    try:
+        from .vivago_login import VivagoAuthError, get_token
+    except Exception as exc:
+        raise MissingCredentialError(
+            "API token required, and bundled Vivago login helper is unavailable. "
+            "Set HIDREAM_AUTHORIZATION/HIDREAM_TOKEN env var or pass token parameter."
+        ) from exc
+
+    try:
+        return get_token(env=env, force_login=force_login)
+    except VivagoAuthError as exc:
+        raise MissingCredentialError(
+            f"Unable to get Vivago auth token for env '{env}': {exc}. "
+            "Set HIDREAM_AUTHORIZATION/HIDREAM_TOKEN, pass token parameter, or run "
+            f"`python scripts/vivago_login.py --env {env} login`."
+        ) from exc
+
 def parse_ratio(ratio_str: str) -> float:
     """解析宽高比字符串，返回宽/高的数值"""
     try:
@@ -1156,19 +1187,36 @@ class VivagoClient:
 
 def create_client(
     token: Optional[str] = None,
-    ports_config_path: Optional[str] = None
+    ports_config_path: Optional[str] = None,
+    auto_login: Optional[bool] = None,
+    auth_env: Optional[str] = None,
+    force_login: bool = False
 ) -> VivagoClient:
     """
     Create Vivago client from environment or parameters.
     
     Environment variables:
-        HIDREAM_AUTHORIZATION: API token (required, fallback to HIDREAM_TOKEN)
+        HIDREAM_AUTHORIZATION: API token (preferred)
+        HIDREAM_TOKEN: Backward-compatible token fallback
+        VIVAGO_AUTH_ENV: Login environment for cached ticket lookup
+            (default: overseas-prod)
+        VIVAGO_AUTH_AUTO_LOGIN: Set to 0/false/no/off to disable automatic login
     """
     token = token or os.environ.get("HIDREAM_AUTHORIZATION") or os.environ.get("HIDREAM_TOKEN")
+
+    if not token:
+        should_auto_login = (
+            _env_flag("VIVAGO_AUTH_AUTO_LOGIN", True)
+            if auto_login is None
+            else auto_login
+        )
+        if should_auto_login:
+            token = _resolve_login_token(auth_env, force_login=force_login)
     
     if not token:
         raise MissingCredentialError(
-            "API token required. Set HIDREAM_AUTHORIZATION env var or pass token parameter."
+            "API token required. Set HIDREAM_AUTHORIZATION/HIDREAM_TOKEN, pass token "
+            "parameter, or enable bundled Vivago login with VIVAGO_AUTH_AUTO_LOGIN=1."
         )
     
     return VivagoClient(token, ports_config_path)
@@ -1194,4 +1242,4 @@ if __name__ == "__main__":
             print(f"  {port_id}: {info['name']} - {'✅' if info['tested'] else '⏳'}")
             
     except MissingCredentialError:
-        print("请设置 HIDREAM_TOKEN 环境变量以运行示例")
+        print("请设置 HIDREAM_AUTHORIZATION/HIDREAM_TOKEN，或运行 scripts/vivago_login.py 登录")

@@ -6,7 +6,6 @@ Generate videos from images using Vivago AI.
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -14,6 +13,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.vivago_client import create_client
+from scripts.exceptions import MissingCredentialError
+from scripts.cli_utils import collect_asset_urls, default_output, save_json, video_url
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,10 +48,13 @@ def main():
     )
     
     parser.add_argument(
-        '--version', '-v',
+        '--port',
+        '--version',
+        '-v',
+        dest='port',
         default='v3Pro',
-        choices=['v3Pro', 'v3L', 'kling-video-o1'],
-        help='Model version (default: v3Pro)'
+        choices=['v3Pro', 'v3L', 'kling-video'],
+        help='Model port (default: v3Pro)'
     )
     
     parser.add_argument(
@@ -89,14 +93,14 @@ def main():
     
     parser.add_argument(
         '--output', '-o',
-        default='video_result.json',
-        help='Output file for results (default: video_result.json)'
+        default=default_output('img2video_results.json'),
+        help='Output JSON file (default: assets/img2video_results.json)'
     )
     
     parser.add_argument(
         '--token',
-        default=os.environ.get('HIDREAM_TOKEN'),
-        help='API token (or set HIDREAM_TOKEN env var)'
+        default=os.environ.get('HIDREAM_AUTHORIZATION') or os.environ.get('HIDREAM_TOKEN'),
+        help='API token (or use HIDREAM_AUTHORIZATION/HIDREAM_TOKEN; falls back to bundled Vivago login)'
     )
     
     parser.add_argument(
@@ -116,7 +120,11 @@ def main():
     # Create client
     try:
         client = create_client(token=args.token)
-    except ValueError as e:
+    except MissingCredentialError as e:
+        logger.error(f"Failed to create client: {e}")
+        logger.error("Set HIDREAM_AUTHORIZATION/HIDREAM_TOKEN, use --token, or run: python scripts/vivago_login.py --env overseas-prod login")
+        sys.exit(1)
+    except Exception as e:
         logger.error(f"Failed to create client: {e}")
         sys.exit(1)
     
@@ -136,13 +144,13 @@ def main():
     # Generate video
     logger.info(f"Generating video from image: {image_uuid}")
     logger.info(f"Prompt: {args.prompt}")
-    logger.info(f"Version: {args.version}, Duration: {args.duration}s, Mode: {args.mode}")
+    logger.info(f"Port: {args.port}, Duration: {args.duration}s, Mode: {args.mode}")
     
     results = client.image_to_video(
         prompt=args.prompt,
         image_uuid=image_uuid,
+        port=args.port,
         wh_ratio=args.wh_ratio,
-        version=args.version,
         duration=args.duration,
         mode=args.mode,
         fast_mode=args.fast_mode,
@@ -160,17 +168,17 @@ def main():
         'image_uuid': image_uuid,
         'parameters': {
             'wh_ratio': args.wh_ratio,
-            'version': args.version,
+            'port': args.port,
             'duration': args.duration,
             'mode': args.mode,
             'fast_mode': args.fast_mode,
             'motion_strength': args.motion_strength
         },
-        'results': results
+        'results': results,
+        'asset_urls': collect_asset_urls(results)
     }
     
-    with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+    save_json(args.output, output_data)
     
     logger.info(f"Results saved to: {args.output}")
     
@@ -178,10 +186,12 @@ def main():
     for i, result in enumerate(results):
         status = result.get('task_status')
         status_text = {1: '✓ Completed', 3: '✗ Failed', 4: '⊘ Rejected'}.get(status, '? Unknown')
-        video_url = result.get('video') or result.get('image') or 'N/A'
+        url = result.get('video') or result.get('image') or 'N/A'
+        if isinstance(url, str) and url != 'N/A':
+            url = video_url(url)
         
         print(f"\n[{i+1}] {status_text}")
-        print(f"    URL: {video_url}")
+        print(f"    URL: {url}")
         
         if result.get('task_completion'):
             print(f"    Progress: {result['task_completion']*100:.0f}%")

@@ -1,17 +1,58 @@
 ---
 name: hidream-model-gen
-description: Generate images and videos using Vivago AI (智小象) platform. Supports text-to-image, image-to-image, image-to-video, and keyframe-to-video generation. Use when the user wants to create AI-generated images or videos, transform existing images, or perform image style transfer through the Vivago AI API.
+description: Generate images and videos using Vivago AI / HiDream. Use for text-to-image, image-to-image, text-to-video, image-to-video, keyframe-to-video, and template video generation. Includes browser login, token refresh, and agent-friendly CLI scripts with JSON outputs.
 dependencies:
   - requests
   - pillow
-requires:
-  env:
-    - HIDREAM_AUTHORIZATION
 ---
 
-# Vivago AI Skill
+# HiDream / Vivago Generation Skill
 
-Integration with Vivago AI (智小象) platform for AI-powered image and video generation.
+Agent-ready integration with Vivago AI / HiDream generation APIs.
+
+## Agent Quick Start
+
+1. Start with the health check:
+
+```bash
+python3 scripts/healthcheck.py --json
+```
+
+2. If auth is missing, run browser login once:
+
+```bash
+python3 scripts/vivago_login.py --env overseas-prod login
+```
+
+3. Use the CLI matching the request:
+
+```bash
+# Text to image
+python3 scripts/txt2img.py --prompt "a clean product photo of a ceramic mug" --wh-ratio 1:1
+
+# Image to image
+python3 scripts/img2img.py --prompt "make this a polished 3D app icon" --image ./assets/source.png --wh-ratio 1:1
+
+# Text to video
+python3 scripts/txt2vid.py --prompt "a ceramic mug gently rotating on a clean desk" --duration 5 --wh-ratio 1:1
+
+# Image to video
+python3 scripts/img2video.py --prompt "gentle camera push in" --image ./assets/source.png --duration 5 --wh-ratio 1:1
+```
+
+Default outputs are written under `assets/`:
+
+- `assets/txt2img_results.json`
+- `assets/img2img_results.json`
+- `assets/txt2vid_results.json`
+- `assets/img2video_results.json`
+
+Each result JSON includes:
+
+- `results`: raw API task results
+- `asset_urls`: ready-to-use image/video URLs
+
+For videos, return or send the URL in `asset_urls`; do not upload the video file unless explicitly requested.
 
 ## Supported Features
 
@@ -39,6 +80,13 @@ Integration with Vivago AI (智小象) platform for AI-powered image and video g
 ```
 scripts/
 ├── vivago_client.py       # Main API client
+├── vivago_login.py        # Browser login, ticket refresh, local auth cache
+├── healthcheck.py         # Fast auth/config readiness check
+├── cli_utils.py           # Shared CLI output and URL helpers
+├── txt2img.py             # Text-to-image CLI
+├── img2img.py             # Image-to-image CLI
+├── txt2vid.py             # Text-to-video CLI
+├── img2video.py           # Image-to-video CLI
 ├── template_manager.py    # Template management
 ├── config_loader.py       # Configuration loading
 ├── enums.py              # Type enums (TaskStatus, AspectRatio, etc.)
@@ -55,9 +103,50 @@ scripts/
 
 ## Setup
 
-### Prerequisites
+### Authentication
 
-Before using this skill, you need to obtain a Vivago.ai API Token:
+This skill can authenticate in either of two ways:
+
+1. Use an existing `HIDREAM_AUTHORIZATION` or `HIDREAM_TOKEN`.
+2. Use the bundled Vivago browser login helper. When no token env var is set, `create_client()` automatically reads the local Vivago auth cache, refreshes an expired ticket when possible, or opens the browser login flow when needed.
+
+#### Bundled Login
+
+Authentication data is stored under `~/.config/vivago-auth/` (or `$XDG_CONFIG_HOME/vivago-auth/`) and is managed by `scripts/vivago_login.py`.
+
+```bash
+# Login once and save the local auth cache
+python scripts/vivago_login.py --env overseas-prod login
+
+# Print a valid ticket, refreshing it if needed
+python scripts/vivago_login.py --env overseas-prod token
+
+# Check auth status without printing secrets
+python scripts/vivago_login.py --env overseas-prod status
+
+# Remove cached auth
+python scripts/vivago_login.py --env overseas-prod logout
+```
+
+Supported auth environments:
+
+- `overseas-dev`
+- `overseas-prod` (default for Vivago API generation)
+- `domestic-dev`
+- `domestic-prod`
+
+Environment controls:
+
+```bash
+export VIVAGO_AUTH_ENV="overseas-prod"
+export VIVAGO_AUTH_AUTO_LOGIN=1
+```
+
+Set `VIVAGO_AUTH_AUTO_LOGIN=0` to restore the older behavior where a missing token fails immediately.
+
+#### Manual Token
+
+If you prefer to provide a Vivago.ai API Token manually:
 
 #### Step 1: Login to Vivago.ai
 1. Visit [https://vivago.ai/](https://vivago.ai/) and log in to your account
@@ -71,8 +160,6 @@ Before using this skill, you need to obtain a Vivago.ai API Token:
 > **Security Note**: The Token is your credential for accessing the API. Please keep it secure and do not share it with others.
 
 ### Environment Variables
-
-**Security Note:** For secure deployments and AI Agents, the system requires the token to be passed strictly via the `HIDREAM_AUTHORIZATION` environment variable.
 
 Export it securely in your current session:
 
@@ -166,34 +253,46 @@ except InvalidPortError as e:
 
 **For AI Agents:** The easiest way to use this skill is through the provided CLI scripts. They automatically handle API communication, polling, and result parsing. By default, they use **HiDream's native models**.
 
+**Health Check:**
+```bash
+python3 scripts/healthcheck.py --json
+```
+
 **Text to Image:**
 ```bash
 python3 scripts/txt2img.py \
   --prompt "a futuristic city" \
   --wh-ratio 16:9 \
-  --batch-size 2 \
-  --output ./assets/results.json
+  --batch-size 2
 ```
-*Note: This defaults to the `hidream-txt2img` model.*
+Output: `assets/txt2img_results.json`. Defaults to the `hidream-txt2img` model.
 
 **Text to Video:**
 ```bash
 python3 scripts/txt2vid.py \
   --prompt "a cybernetic dragon flying over a futuristic city" \
   --wh-ratio 16:9 \
-  --duration 5 \
-  --output ./assets/video_results.json
+  --duration 5
 ```
-*Note: This defaults to the `v3Pro` model.*
+Output: `assets/txt2vid_results.json`. Defaults to the `v3Pro` model.
 
 **Image to Video:**
 ```bash
 python3 scripts/img2video.py \
   --prompt "slow motion falling leaves" \
   --image ./assets/source_image.jpg \
-  --duration 5 \
-  --output ./assets/video.json
+  --duration 5
 ```
+Output: `assets/img2video_results.json`.
+
+**Image to Image:**
+```bash
+python3 scripts/img2img.py \
+  --prompt "turn this portrait into a cinematic editorial photo" \
+  --image ./assets/source_image.jpg \
+  --wh-ratio 16:9
+```
+Output: `assets/img2img_results.json`.
 
 ## API Reference
 
@@ -213,6 +312,7 @@ from scripts.enums import (
 | Feature | Available Versions | Default |
 |---------|-------------------|---------|
 | Text to Image | v3L (HiDream), kling-image-o1 | **v3L** (via port `hidream-txt2img`) |
+| Image to Image | kling-image-o1, nano-banana-2 | **Kling O1** (via port `kling-image`) |
 | Image to Video | v3Pro, v3L, kling-video-o1 | **v3Pro** |
 | Keyframe to Video | v3Pro, v3L | **v3Pro** |
 
@@ -245,6 +345,11 @@ vivago-ai-skill/
 ├── scripts/
 │   ├── __init__.py         # Package exports
 │   ├── vivago_client.py    # Core API client
+│   ├── vivago_login.py     # Browser login and token refresh
+│   ├── txt2img.py          # Text-to-image CLI
+│   ├── img2img.py          # Image-to-image CLI
+│   ├── txt2vid.py          # Text-to-video CLI
+│   ├── img2video.py        # Image-to-video CLI
 │   ├── template_manager.py # Template management
 │   ├── config_loader.py    # Configuration loader
 │   ├── enums.py            # Type enums
@@ -253,16 +358,12 @@ vivago-ai-skill/
 │   └── config/             # Modular config files
 │       ├── base.json
 │       ├── text_to_image.json
+│       ├── text_to_video.json
+│       ├── image_to_image.json
 │       ├── image_to_video.json
-│       └── ...
-├── tests/
-│   ├── conftest.py         # Pytest configuration
-│   ├── archive/            # Archived tests
-│   └── ...
-├── docs/                   # Documentation
-├── .github/workflows/      # CI configuration
+│       ├── keyframe_to_video.json
+│       └── template_to_video.json
 ├── requirements.txt
-├── README.md
 └── SKILL.md               # This file
 ```
 
